@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "Paper" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "authors" TEXT NOT NULL,
     "abstract" TEXT,
@@ -11,6 +11,8 @@ CREATE TABLE "Paper" (
     "doi" TEXT,
     "volume" TEXT,
     "pages" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Paper_pkey" PRIMARY KEY ("id")
 );

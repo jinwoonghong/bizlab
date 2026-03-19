@@ -31,10 +31,6 @@ interface CrossRefWork {
 
 type PaperIdType = "doi" | "arxiv" | "semantic";
 
-function isGoogleScholarUrl(url: string): boolean {
-  return /scholar\.google\./i.test(url);
-}
-
 function extractPaperId(url: string): { type: PaperIdType; id: string } | null {
   // DOI URL patterns
   const doiPatterns = [
@@ -67,8 +63,8 @@ function extractPaperId(url: string): { type: PaperIdType; id: string } | null {
   return null;
 }
 
-// Fetch paper title from Google Scholar page and search via Semantic Scholar
-async function fetchFromGoogleScholar(url: string): Promise<PaperMetadata | null> {
+// Scrape any web page to extract DOI or title, then look up metadata
+async function fetchFromWebPage(url: string): Promise<PaperMetadata | null> {
   try {
     const res = await fetch(url, {
       headers: {
@@ -80,41 +76,86 @@ async function fetchFromGoogleScholar(url: string): Promise<PaperMetadata | null
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
+
+    const contentType = res.headers.get("content-type") ?? "";
+    // Skip binary content (PDFs, images, etc.)
+    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+      return null;
+    }
+
     const html = await res.text();
 
-    // Try to extract DOI from the page first
-    const doiMatch = html.match(/10\.\d{4,}\/[^\s"'<&]+/);
-    if (doiMatch) {
-      const doiId = doiMatch[0].replace(/[.,;)}\]]+$/, "");
+    // Strategy A: Extract DOI from the page (meta tags, links, or body text)
+    const doiPatterns = [
+      // <meta name="citation_doi" content="10.xxxx/...">
+      /<meta\s+name="citation_doi"\s+content="([^"]+)"/i,
+      // <meta name="dc.identifier" content="doi:10.xxxx/...">
+      /<meta\s+name="dc\.identifier"\s+content="(?:doi:)?([^"]+)"/i,
+      // <meta name="DOI" content="10.xxxx/...">
+      /<meta\s+name="DOI"\s+content="([^"]+)"/i,
+      // <meta property="citation_doi" content="10.xxxx/...">
+      /<meta\s+property="citation_doi"\s+content="([^"]+)"/i,
+    ];
+    for (const pattern of doiPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const doiId = match[1].replace(/^doi:/i, "").trim();
+        if (doiId.startsWith("10.")) {
+          const metadata = await fetchFromSemanticScholar("doi", doiId);
+          if (metadata) return metadata;
+          const crossRefMeta = await fetchFromCrossRef(doiId);
+          if (crossRefMeta) return crossRefMeta;
+        }
+      }
+    }
+
+    // Fallback: find DOI pattern anywhere in the HTML body
+    const bodyDoiMatch = html.match(/\b(10\.\d{4,}\/[^\s"'<>&]{3,})\b/);
+    if (bodyDoiMatch) {
+      const doiId = bodyDoiMatch[1].replace(/[.,;)}\]]+$/, "");
       const metadata = await fetchFromSemanticScholar("doi", doiId);
       if (metadata) return metadata;
       const crossRefMeta = await fetchFromCrossRef(doiId);
       if (crossRefMeta) return crossRefMeta;
     }
 
-    // Extract title from the page
+    // Strategy B: Extract title and search Semantic Scholar
     let title: string | null = null;
 
-    // Try <meta> citation tags (Google Scholar uses these)
+    // Try citation meta tags (used by most academic publishers)
     const citationTitle = html.match(/<meta\s+name="citation_title"\s+content="([^"]+)"/i);
     if (citationTitle) {
       title = citationTitle[1];
     }
 
-    // Fallback: extract from <title> tag (format: "Paper Title - Google Scholar")
+    // Try Open Graph title
+    if (!title) {
+      const ogTitle = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i);
+      if (ogTitle) title = ogTitle[1];
+    }
+
+    // Try dc.title (Dublin Core)
+    if (!title) {
+      const dcTitle = html.match(/<meta\s+name="dc\.title"\s+content="([^"]+)"/i);
+      if (dcTitle) title = dcTitle[1];
+    }
+
+    // Fallback: <title> tag, strip common suffixes
     if (!title) {
       const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i);
       if (titleTag) {
         title = titleTag[1]
-          .replace(/\s*[-–—]\s*Google\s+Scholar.*$/i, "")
-          .replace(/\s*[-–—]\s*Google\s+학술검색.*$/i, "")
+          .replace(/\s*[-–—|]\s*(Google\s+Scholar|IEEE|ACM|Springer|Elsevier|ScienceDirect|Nature|Wiley|PLOS|MDPI|arXiv|학술검색).*$/i, "")
+          .replace(/\s*[-–—|]\s*[A-Z][a-z]+(\s+[A-Z][a-z]+){0,3}\s*$/i, "")
           .trim();
       }
     }
 
     if (!title || title.length < 5) return null;
 
-    // Search Semantic Scholar by title
+    // Decode HTML entities
+    title = title.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+
     const searchUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(title)}&limit=1&fields=title,authors,abstract,year,venue,externalIds`;
     const searchRes = await fetch(searchUrl, {
       headers: { "User-Agent": "BizLab/1.0" },
@@ -265,43 +306,29 @@ export async function POST(request: NextRequest) {
     const trimmedUrl = url.trim();
     let metadata: PaperMetadata | null = null;
 
-    // Google Scholar URL: scrape page for title/DOI, then search
-    if (isGoogleScholarUrl(trimmedUrl)) {
-      metadata = await fetchFromGoogleScholar(trimmedUrl);
-      if (!metadata) {
-        return NextResponse.json<ApiError>(
-          { error: "Google Scholar 페이지에서 논문 정보를 추출하지 못했습니다. DOI 또는 arXiv 링크를 직접 입력해보세요." },
-          { status: 404 }
-        );
-      }
-      metadata.url = trimmedUrl;
-      return NextResponse.json(metadata);
-    }
-
     const parsed = extractPaperId(trimmedUrl);
-    if (!parsed) {
-      return NextResponse.json<ApiError>(
-        { error: "URL에서 DOI 또는 arXiv ID를 감지하지 못했습니다. 지원: doi.org, arxiv.org, Google Scholar 링크, 또는 DOI 직접 입력 (10.xxxx/...)" },
-        { status: 400 }
-      );
+
+    if (parsed) {
+      // Known ID type: use direct API lookup
+      metadata = await fetchFromSemanticScholar(parsed.type, parsed.id);
+
+      if (!metadata && parsed.type === "doi") {
+        metadata = await fetchFromCrossRef(parsed.id);
+      }
+
+      if (!metadata && parsed.type === "arxiv") {
+        metadata = await fetchFromArxiv(parsed.id);
+      }
     }
 
-    // Try Semantic Scholar first (broadest coverage)
-    metadata = await fetchFromSemanticScholar(parsed.type, parsed.id);
-
-    // Fallback: CrossRef for DOI-based lookups
-    if (!metadata && parsed.type === "doi") {
-      metadata = await fetchFromCrossRef(parsed.id);
-    }
-
-    // Fallback: arXiv API for arXiv papers
-    if (!metadata && parsed.type === "arxiv") {
-      metadata = await fetchFromArxiv(parsed.id);
+    // Fallback: scrape the web page for DOI or title
+    if (!metadata && trimmedUrl.startsWith("http")) {
+      metadata = await fetchFromWebPage(trimmedUrl);
     }
 
     if (!metadata) {
       return NextResponse.json<ApiError>(
-        { error: "논문을 찾지 못했습니다. Semantic Scholar, CrossRef, arXiv API를 모두 시도했습니다. URL을 확인해주세요." },
+        { error: "논문 정보를 찾지 못했습니다. 페이지에서 DOI나 제목을 추출할 수 없었습니다. 다른 URL을 시도해보세요." },
         { status: 404 }
       );
     }

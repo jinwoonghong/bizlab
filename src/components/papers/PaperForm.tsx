@@ -297,7 +297,7 @@ export default function PaperForm({
           )}
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          Google Scholar, DOI(doi.org), arXiv(arxiv.org) 링크를 지원합니다. URL을 붙여넣으면 자동으로 메타데이터를 가져옵니다.
+          학술지 사이트, Google Scholar, DOI, arXiv 등 대부분의 논문 URL을 지원합니다. 붙여넣으면 자동으로 메타데이터를 가져옵니다.
         </p>
       </div>
 

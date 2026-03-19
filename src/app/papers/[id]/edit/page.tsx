@@ -43,10 +43,10 @@ export default function EditPaperPage() {
           const data = await res.json();
           setPaper(data);
         } else {
-          setError("Paper not found");
+          setError("논문을 찾을 수 없습니다");
         }
       } catch {
-        setError("Failed to load paper");
+        setError("논문을 불러올 수 없습니다");
       } finally {
         setIsFetching(false);
       }
@@ -86,13 +86,13 @@ export default function EditPaperPage() {
         if (res.status === 401) {
           setAdminPassword(null);
           setShowPasswordModal(true);
-          setError("Password expired or invalid. Please verify again.");
+          setError("비밀번호가 만료되었거나 올바르지 않습니다. 다시 인증해주세요.");
         } else {
-          setError(errData.error || "Failed to update paper");
+          setError(errData.error || "논문 수정에 실패했습니다");
         }
       }
     } catch {
-      setError("An error occurred. Please try again.");
+      setError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -118,9 +118,9 @@ export default function EditPaperPage() {
   if (!paper && !isFetching) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-xl font-semibold text-gray-900">Paper Not Found</h2>
+        <h2 className="text-xl font-semibold text-gray-900">논문을 찾을 수 없습니다</h2>
         <p className="mt-2 text-sm text-gray-500">
-          The paper could not be loaded.
+          논문을 불러올 수 없습니다.
         </p>
       </div>
     );
@@ -129,9 +129,9 @@ export default function EditPaperPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Edit Paper</h1>
+        <h1 className="text-2xl font-bold text-gray-900">논문 수정</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Update the paper details below.
+          아래에서 논문 정보를 수정하세요.
         </p>
       </div>
 

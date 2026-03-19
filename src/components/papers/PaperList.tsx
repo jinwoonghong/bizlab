@@ -43,9 +43,9 @@ export default function PaperList({
             d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-semibold text-gray-900">No papers found</h3>
+        <h3 className="mt-2 text-sm font-semibold text-gray-900">논문이 없습니다</h3>
         <p className="mt-1 text-sm text-gray-500">
-          Try adjusting your search or filter criteria.
+          검색어나 필터 조건을 변경해보세요.
         </p>
       </div>
     );
@@ -54,7 +54,7 @@ export default function PaperList({
   return (
     <div>
       <p className="mb-4 text-sm text-gray-500">
-        {total} paper{total !== 1 ? "s" : ""} found
+        총 {total}편
       </p>
       <div className="grid gap-4">
         {papers.map((paper) => (

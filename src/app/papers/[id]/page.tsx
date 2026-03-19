@@ -29,7 +29,7 @@ export default async function PaperDetailPage({ params }: PaperDetailPageProps) 
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
-          Back to Papers
+          논문 목록으로
         </Link>
       </nav>
 

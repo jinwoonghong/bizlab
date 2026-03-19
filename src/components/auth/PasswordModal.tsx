@@ -23,7 +23,7 @@ export default function PasswordModal({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!password.trim()) {
-      setError("Password is required");
+      setError("비밀번호를 입력해주세요");
       return;
     }
 
@@ -44,10 +44,10 @@ export default function PasswordModal({
         setPassword("");
         setError("");
       } else {
-        setError("Incorrect password");
+        setError("비밀번호가 올바르지 않습니다");
       }
     } catch {
-      setError("An error occurred. Please try again.");
+      setError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -60,27 +60,27 @@ export default function PasswordModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Admin Verification">
+    <Modal isOpen={isOpen} onClose={handleClose} title="관리자 인증">
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-sm text-gray-600">
-          Enter the admin password to continue.
+          계속하려면 관리자 비밀번호를 입력하세요.
         </p>
         <Input
-          label="Password"
+          label="비밀번호"
           name="password"
           type="password"
           value={password}
           onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
           error={error}
-          placeholder="Enter admin password"
+          placeholder="관리자 비밀번호 입력"
           autoFocus
         />
         <div className="flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={handleClose}>
-            Cancel
+            취소
           </Button>
           <Button type="submit" isLoading={isLoading}>
-            Verify
+            확인
           </Button>
         </div>
       </form>

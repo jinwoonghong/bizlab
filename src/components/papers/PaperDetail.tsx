@@ -39,7 +39,7 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
   };
 
   const handleDelete = async (password: string) => {
-    if (!confirm("Are you sure you want to delete this paper? This action cannot be undone.")) {
+    if (!confirm("이 논문을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
       return;
     }
 
@@ -54,17 +54,17 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
         router.push("/papers");
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to delete paper");
+        alert(data.error || "논문 삭제에 실패했습니다");
       }
     } catch {
-      alert("An error occurred while deleting the paper");
+      alert("논문 삭제 중 오류가 발생했습니다");
     } finally {
       setIsDeleting(false);
     }
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
+    return new Date(date).toLocaleDateString("ko-KR", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -81,7 +81,7 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
           <h1 className="text-2xl font-bold text-gray-900">{paper.title}</h1>
           <div className="flex gap-2 shrink-0">
             <Button variant="secondary" size="sm" onClick={handleEditClick}>
-              Edit
+              수정
             </Button>
             <Button
               variant="danger"
@@ -89,19 +89,19 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
               onClick={handleDeleteClick}
               isLoading={isDeleting}
             >
-              Delete
+              삭제
             </Button>
           </div>
         </div>
 
         {/* Metadata */}
         <dl className="space-y-4">
-          <DetailRow label="Authors" value={paper.authors.join(", ")} />
-          {paper.year && <DetailRow label="Year" value={String(paper.year)} />}
-          {paper.journal && <DetailRow label="Journal" value={paper.journal} />}
+          <DetailRow label="저자" value={paper.authors.join(", ")} />
+          {paper.year && <DetailRow label="출판연도" value={String(paper.year)} />}
+          {paper.journal && <DetailRow label="학술지" value={paper.journal} />}
           {paper.doi && <DetailRow label="DOI" value={paper.doi} />}
-          {paper.volume && <DetailRow label="Volume" value={paper.volume} />}
-          {paper.pages && <DetailRow label="Pages" value={paper.pages} />}
+          {paper.volume && <DetailRow label="권" value={paper.volume} />}
+          {paper.pages && <DetailRow label="페이지" value={paper.pages} />}
           {paper.url && (
             <div className="sm:grid sm:grid-cols-4 sm:gap-4">
               <dt className="text-sm font-medium text-gray-500">URL</dt>
@@ -120,7 +120,7 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
 
           {paper.abstract && (
             <div>
-              <dt className="text-sm font-medium text-gray-500 mb-1">Abstract</dt>
+              <dt className="text-sm font-medium text-gray-500 mb-1">초록</dt>
               <dd className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
                 {paper.abstract}
               </dd>
@@ -129,7 +129,7 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
 
           {paper.keywords && paper.keywords.length > 0 && (
             <div>
-              <dt className="text-sm font-medium text-gray-500 mb-2">Keywords</dt>
+              <dt className="text-sm font-medium text-gray-500 mb-2">키워드</dt>
               <dd className="flex flex-wrap gap-1.5">
                 {paper.keywords.map((keyword) => (
                   <Badge key={keyword} text={keyword} />
@@ -141,8 +141,8 @@ export default function PaperDetail({ paper }: PaperDetailProps) {
 
         {/* Timestamps */}
         <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-4 text-xs text-gray-400">
-          <span>Created: {formatDate(paper.createdAt)}</span>
-          <span>Updated: {formatDate(paper.updatedAt)}</span>
+          <span>등록일: {formatDate(paper.createdAt)}</span>
+          <span>수정일: {formatDate(paper.updatedAt)}</span>
         </div>
       </div>
 

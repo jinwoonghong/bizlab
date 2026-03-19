@@ -14,13 +14,13 @@ export default function Header() {
                 href="/papers"
                 className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
               >
-                Papers
+                논문 목록
               </Link>
               <Link
                 href="/papers/new"
                 className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
               >
-                Register New
+                논문 등록
               </Link>
             </nav>
           </div>
@@ -52,13 +52,13 @@ export default function Header() {
             href="/papers"
             className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
           >
-            Papers
+            논문 목록
           </Link>
           <Link
             href="/papers/new"
             className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
           >
-            Register New
+            논문 등록
           </Link>
         </nav>
       </div>

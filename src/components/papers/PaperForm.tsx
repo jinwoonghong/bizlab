@@ -71,7 +71,7 @@ export default function PaperForm({
 
   const fetchMetadata = async () => {
     if (!url.trim()) {
-      setFetchMessage({ type: "error", text: "Please enter a URL first." });
+      setFetchMessage({ type: "error", text: "먼저 URL을 입력해주세요." });
       return;
     }
     setIsFetching(true);
@@ -84,7 +84,7 @@ export default function PaperForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        setFetchMessage({ type: "error", text: data.error || "Failed to fetch metadata." });
+        setFetchMessage({ type: "error", text: data.error || "메타데이터를 가져오지 못했습니다." });
         return;
       }
       if (data.title) setTitle(data.title);
@@ -93,9 +93,9 @@ export default function PaperForm({
       if (data.year) setYear(String(data.year));
       if (data.journal) setJournal(data.journal);
       if (data.doi) setDoi(data.doi);
-      setFetchMessage({ type: "success", text: "Metadata loaded successfully!" });
+      setFetchMessage({ type: "success", text: "메타데이터를 성공적으로 불러왔습니다!" });
     } catch {
-      setFetchMessage({ type: "error", text: "Network error. Please try again." });
+      setFetchMessage({ type: "error", text: "네트워크 오류입니다. 다시 시도해주세요." });
     } finally {
       setIsFetching(false);
     }
@@ -103,13 +103,13 @@ export default function PaperForm({
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!title.trim()) errs.title = "Title is required";
+    if (!title.trim()) errs.title = "제목을 입력해주세요";
     const validAuthors = authors.filter((a) => a.trim());
     if (validAuthors.length === 0)
-      errs.authors = "At least one author is required";
-    if (url && !url.match(/^https?:\/\/.+/)) errs.url = "Invalid URL format";
+      errs.authors = "저자를 한 명 이상 입력해주세요";
+    if (url && !url.match(/^https?:\/\/.+/)) errs.url = "올바르지 않은 URL 형식입니다";
     if (year && (isNaN(Number(year)) || Number(year) < 1900 || Number(year) > 2100))
-      errs.year = "Year must be between 1900 and 2100";
+      errs.year = "출판연도는 1900~2100 사이여야 합니다";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -138,18 +138,18 @@ export default function PaperForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Input
-        label="Title *"
+        label="제목 *"
         name="title"
         value={title}
         onChange={(e) => setTitle((e.target as HTMLInputElement).value)}
         error={errors.title}
-        placeholder="Enter paper title"
+        placeholder="논문 제목을 입력하세요"
       />
 
       {/* Authors */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Authors *
+          저자 *
         </label>
         {authors.map((author, index) => (
           <div key={index} className="flex gap-2 mb-2">
@@ -159,7 +159,7 @@ export default function PaperForm({
               onChange={(e) =>
                 handleAuthorChange(index, (e.target as HTMLInputElement).value)
               }
-              placeholder={`Author ${index + 1}`}
+              placeholder={`저자 ${index + 1}`}
             />
             {authors.length > 1 && (
               <Button
@@ -180,25 +180,25 @@ export default function PaperForm({
           <p className="mt-1 text-sm text-red-600">{errors.authors}</p>
         )}
         <Button type="button" variant="ghost" size="sm" onClick={addAuthor}>
-          + Add Author
+          + 저자 추가
         </Button>
       </div>
 
       {/* Abstract */}
       <Input
         as="textarea"
-        label="Abstract"
+        label="초록"
         name="abstract"
         value={abstract}
         onChange={(e) => setAbstract((e.target as HTMLTextAreaElement).value)}
         rows={4}
-        placeholder="Enter paper abstract"
+        placeholder="논문 초록을 입력하세요"
       />
 
       {/* Keywords */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Keywords
+          키워드
         </label>
         {keywords.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
@@ -220,10 +220,10 @@ export default function PaperForm({
               setKeywordInput((e.target as HTMLInputElement).value)
             }
             onKeyDown={handleKeywordKeyDown}
-            placeholder="Add a keyword and press Enter"
+            placeholder="키워드를 입력하고 Enter를 누르세요"
           />
           <Button type="button" variant="secondary" size="md" onClick={addKeyword}>
-            Add
+            추가
           </Button>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function PaperForm({
             isLoading={isFetching}
             disabled={!url.trim()}
           >
-            Fetch Metadata from URL
+            URL에서 메타데이터 가져오기
           </Button>
           {fetchMessage && (
             <span className={`text-sm ${fetchMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
@@ -260,14 +260,14 @@ export default function PaperForm({
           )}
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          Supports DOI (doi.org), arXiv (arxiv.org) links. Fetches title, authors, abstract, year, journal, and DOI.
+          DOI(doi.org), arXiv(arxiv.org) 링크를 지원합니다. 제목, 저자, 초록, 출판연도, 학술지, DOI를 자동으로 가져옵니다.
         </p>
       </div>
 
       {/* Year and Journal row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
-          label="Year"
+          label="출판연도"
           name="year"
           type="number"
           value={year}
@@ -278,11 +278,11 @@ export default function PaperForm({
           max={2100}
         />
         <Input
-          label="Journal"
+          label="학술지"
           name="journal"
           value={journal}
           onChange={(e) => setJournal((e.target as HTMLInputElement).value)}
-          placeholder="Journal name"
+          placeholder="학술지명"
         />
       </div>
 
@@ -298,24 +298,23 @@ export default function PaperForm({
       {/* Volume and Pages row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
-          label="Volume"
+          label="권"
           name="volume"
           value={volume}
           onChange={(e) => setVolume((e.target as HTMLInputElement).value)}
-          placeholder="Volume"
         />
         <Input
-          label="Pages"
+          label="페이지"
           name="pages"
           value={pages}
           onChange={(e) => setPages((e.target as HTMLInputElement).value)}
-          placeholder="e.g. 1-15"
+          placeholder="예: 1-15"
         />
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="submit" isLoading={isLoading}>
-          {initialData ? "Update Paper" : "Register Paper"}
+          {initialData ? "논문 수정" : "논문 등록"}
         </Button>
       </div>
     </form>

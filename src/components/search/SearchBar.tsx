@@ -11,7 +11,7 @@ interface SearchBarProps {
 export default function SearchBar({
   defaultValue = "",
   onSearch,
-  placeholder = "Search papers...",
+  placeholder = "논문 검색...",
 }: SearchBarProps) {
   const [value, setValue] = useState(defaultValue);
   const timerRef = useRef<NodeJS.Timeout | null>(null);

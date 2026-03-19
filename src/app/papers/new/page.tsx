@@ -26,10 +26,10 @@ export default function NewPaperPage() {
         router.push(`/papers/${paper.id}`);
       } else {
         const errData = await res.json();
-        setError(errData.error || "Failed to create paper");
+        setError(errData.error || "논문 등록에 실패했습니다");
       }
     } catch {
-      setError("An error occurred. Please try again.");
+      setError("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -38,9 +38,9 @@ export default function NewPaperPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Register New Paper</h1>
+        <h1 className="text-2xl font-bold text-gray-900">새 논문 등록</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Add a new research paper to the collection.
+          새로운 연구 논문을 컬렉션에 추가하세요.
         </p>
       </div>
 

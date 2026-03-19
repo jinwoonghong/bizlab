@@ -69,9 +69,9 @@ export default function PapersPageClient({
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Research Papers</h1>
+        <h1 className="text-2xl font-bold text-gray-900">연구 논문</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Browse and search the paper collection.
+          논문 컬렉션을 검색하고 탐색하세요.
         </p>
       </div>
 

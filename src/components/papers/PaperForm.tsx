@@ -69,6 +69,42 @@ export default function PaperForm({
     }
   };
 
+  const handleUrlPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").trim();
+    if (pasted && pasted.match(/^https?:\/\/.+/)) {
+      // Let the input update first, then trigger fetch
+      setTimeout(() => fetchMetadataFromUrl(pasted), 100);
+    }
+  };
+
+  const fetchMetadataFromUrl = async (targetUrl: string) => {
+    setIsFetching(true);
+    setFetchMessage(null);
+    try {
+      const res = await fetch("/api/papers/fetch-metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: targetUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFetchMessage({ type: "error", text: data.error || "메타데이터를 가져오지 못했습니다." });
+        return;
+      }
+      if (data.title) setTitle(data.title);
+      if (data.authors?.length) setAuthors(data.authors);
+      if (data.abstract) setAbstract(data.abstract);
+      if (data.year) setYear(String(data.year));
+      if (data.journal) setJournal(data.journal);
+      if (data.doi) setDoi(data.doi);
+      setFetchMessage({ type: "success", text: "메타데이터를 성공적으로 불러왔습니다!" });
+    } catch {
+      setFetchMessage({ type: "error", text: "네트워크 오류입니다. 다시 시도해주세요." });
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   const fetchMetadata = async () => {
     if (!url.trim()) {
       setFetchMessage({ type: "error", text: "먼저 URL을 입력해주세요." });
@@ -239,8 +275,9 @@ export default function PaperForm({
             setUrl((e.target as HTMLInputElement).value);
             setFetchMessage(null);
           }}
+          onPaste={handleUrlPaste}
           error={errors.url}
-          placeholder="https://doi.org/10.xxxx/... or https://arxiv.org/abs/..."
+          placeholder="논문 URL을 붙여넣으면 자동으로 메타데이터를 가져옵니다"
         />
         <div className="mt-2 flex items-center gap-3">
           <Button
@@ -260,7 +297,7 @@ export default function PaperForm({
           )}
         </div>
         <p className="mt-1 text-xs text-gray-500">
-          DOI(doi.org), arXiv(arxiv.org) 링크를 지원합니다. 제목, 저자, 초록, 출판연도, 학술지, DOI를 자동으로 가져옵니다.
+          Google Scholar, DOI(doi.org), arXiv(arxiv.org) 링크를 지원합니다. URL을 붙여넣으면 자동으로 메타데이터를 가져옵니다.
         </p>
       </div>
 

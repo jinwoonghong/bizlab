@@ -56,9 +56,48 @@ function extractPaperId(url: string): { type: PaperIdType; id: string } | null {
   const s2Match = url.match(/semanticscholar\.org\/paper\/[^/]*?([a-f0-9]{40})/i);
   if (s2Match) return { type: "semantic", id: s2Match[1] };
 
+  // Publisher-specific URL patterns → DOI extraction
+  const publisherPatterns: [RegExp, string][] = [
+    // Nature: nature.com/articles/s41586-019-1138-y(.pdf)
+    [/nature\.com\/articles\/(s\d+[-\w]+?)(?:\.pdf|\.html)?(?:\?|#|$)/i, "10.1038/$1"],
+    // ACM: dl.acm.org/doi(/pdf)/10.1145/xxxxx
+    [/dl\.acm\.org\/doi\/(?:pdf\/|abs\/|full\/)?(10\.\d{4,}\/[^\s?#]+)/i, "$1"],
+    // Springer: link.springer.com/article/10.1007/xxxxx or /content/pdf/10.1007/xxxxx.pdf
+    [/link\.springer\.com\/(?:article|chapter|content\/pdf)\/(10\.\d{4,}\/[^\s?#.]+)/i, "$1"],
+    // Wiley: onlinelibrary.wiley.com/doi(/pdf)/10.xxxx/xxxxx
+    [/onlinelibrary\.wiley\.com\/doi\/(?:pdf\/|abs\/|full\/)?(10\.\d{4,}\/[^\s?#]+)/i, "$1"],
+    // ScienceDirect/Elsevier: doi embedded in redirects
+    [/sciencedirect\.com\/science\/article\/(?:pii|abs)\/(S\d{15,})/i, "pii:$1"],
+    // IEEE: ieeexplore.ieee.org/document/12345 or /stamp/stamp.jsp?arnumber=12345
+    [/ieeexplore\.ieee\.org\/(?:document|stamp\/stamp\.jsp\?(?:tp=&)?arnumber=)(\d+)/i, "ieee:$1"],
+    // PLOS: journals.plos.org/plosone/article?id=10.1371/xxxxx
+    [/plos\.org\/\w+\/article\?id=(10\.\d{4,}\/[^\s&#]+)/i, "$1"],
+    // MDPI: mdpi.com/xxxx-xxxx/x/x/xxx or mdpi.com/xxxx-xxxx/x/x/xxx/pdf
+    [/mdpi\.com\/(\d{4}-\d{4}\/\d+\/\d+\/\d+)/i, "mdpi:$1"],
+    // Frontiers: frontiersin.org/articles/10.3389/xxxxx
+    [/frontiersin\.org\/(?:articles|journals\/\w+\/articles)\/(10\.\d{4,}\/[^\s?#]+)/i, "$1"],
+    // APS: journals.aps.org/prl/abstract/10.1103/xxxxx
+    [/journals\.aps\.org\/\w+\/(?:abstract|pdf)\/(10\.\d{4,}\/[^\s?#]+)/i, "$1"],
+    // Science: science.org/doi(/pdf)/10.1126/xxxxx
+    [/science\.org\/doi\/(?:pdf\/|abs\/|full\/)?(10\.\d{4,}\/[^\s?#]+)/i, "$1"],
+  ];
+
+  for (const [pattern, template] of publisherPatterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const id = template.replace(/\$(\d)/g, (_, n) => match[Number(n)] ?? "");
+      // Handle special prefixes for non-DOI identifiers
+      if (id.startsWith("pii:") || id.startsWith("ieee:") || id.startsWith("mdpi:")) {
+        // These will be resolved via web page scraping fallback
+        break;
+      }
+      return { type: "doi", id: id.replace(/\.pdf$/i, "") };
+    }
+  }
+
   // Plain DOI string (10.xxxx/yyyy)
   const plainDoi = url.match(/(10\.\d{4,}\/[^\s]+)/);
-  if (plainDoi) return { type: "doi", id: plainDoi[1] };
+  if (plainDoi) return { type: "doi", id: plainDoi[1].replace(/\.pdf$/i, "") };
 
   return null;
 }
@@ -66,15 +105,32 @@ function extractPaperId(url: string): { type: PaperIdType; id: string } | null {
 // Scrape any web page to extract DOI or title, then look up metadata
 async function fetchFromWebPage(url: string): Promise<PaperMetadata | null> {
   try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
+    // For PDF URLs, try the HTML version first
+    let fetchUrl = url;
+    if (/\.pdf(\?|#|$)/i.test(url)) {
+      fetchUrl = url.replace(/\.pdf(\?|#|$)/i, "$1");
+    }
+
+    const fetchHeaders = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml",
+      "Accept-Language": "en-US,en;q=0.9",
+    };
+
+    let res = await fetch(fetchUrl, {
+      headers: fetchHeaders,
       redirect: "follow",
       signal: AbortSignal.timeout(10000),
     });
+
+    // If HTML version fails, try original URL
+    if (!res.ok && fetchUrl !== url) {
+      res = await fetch(url, {
+        headers: fetchHeaders,
+        redirect: "follow",
+        signal: AbortSignal.timeout(10000),
+      });
+    }
     if (!res.ok) return null;
 
     const contentType = res.headers.get("content-type") ?? "";

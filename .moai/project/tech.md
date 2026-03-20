@@ -4,16 +4,19 @@
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Framework | Next.js (App Router) | 15.x |
+| Framework | Next.js (App Router) | 15.1.3 |
+| UI Library | React | 18.3.1 |
 | Language | TypeScript | 5.x |
-| ORM | Prisma | 6.x |
-| Database | SQLite | 3.x |
+| ORM | Prisma | 6.19.2 |
+| Database | PostgreSQL (Vercel Postgres / Neon) | - |
 | Styling | Tailwind CSS | 4.x |
-| Validation | Zod | 3.x |
+| Validation | Zod | 3.25.76 |
+| Testing | Vitest | 4.1.0 |
+| Linting | ESLint | 9.x |
 | Runtime | Node.js | 20.x LTS |
-| Package Manager | npm or pnpm | Latest |
+| Deployment | Vercel | - |
 
-## Framework: Next.js 15 with App Router
+## Framework: Next.js 15.1.3 with App Router
 
 ### Why Next.js
 
@@ -24,11 +27,13 @@
 
 ### Key Features Used
 
-- **Route Handlers** (`route.ts`): REST API endpoints for paper CRUD operations, replacing the need for a separate backend server.
+- **Route Handlers** (`route.ts`): REST API endpoints for paper CRUD operations and metadata extraction, replacing the need for a separate backend server.
 - **Server Components**: Default rendering mode for pages that read data, reducing client-side bundle size.
-- **Client Components**: Used selectively for interactive elements like forms, search inputs, and modals.
+- **Client Components**: Used selectively for interactive elements like forms, search inputs, modals, and the papers page client state manager (`PapersPageClient.tsx`).
 - **Dynamic Routes** (`[id]`): Parameter-based routing for paper detail and edit pages.
-- **Metadata API**: Built-in SEO support with dynamic page titles and descriptions.
+- **Loading States** (`loading.tsx`): Skeleton loading UI for improved perceived performance.
+- **Not Found** (`not-found.tsx`): Custom 404 pages for missing papers.
+- **Redirects**: Root page redirects to `/papers`.
 
 ## Language: TypeScript
 
@@ -39,36 +44,31 @@
 - **Prisma integration**: Prisma generates TypeScript types from the database schema, ensuring end-to-end type safety from database to UI.
 - **Industry standard**: Widely adopted in the Next.js ecosystem with first-class support.
 
-## ORM: Prisma
+## ORM: Prisma 6.19.2
 
 ### Why Prisma
 
 - **Declarative schema**: The `schema.prisma` file serves as the single source of truth for the data model, readable by both developers and non-developers.
 - **Auto-generated client**: Type-safe database queries generated from the schema, eliminating manual SQL and reducing runtime errors.
 - **Migration system**: Automatic migration generation tracks schema changes over time with rollback capability.
-- **SQLite support**: First-class SQLite support makes it easy to start development without external database setup.
+- **PostgreSQL support**: First-class PostgreSQL support with connection pooling compatibility for serverless environments.
 
 ### Key Features Used
 
-- **Prisma Client**: Auto-generated query builder with full TypeScript type inference.
+- **Prisma Client**: Auto-generated query builder with full TypeScript type inference, instantiated as a singleton in `src/lib/prisma.ts`.
 - **Prisma Migrate**: Schema migration management for database evolution.
-- **Prisma Studio**: Visual database browser for development and debugging (accessed via `npx prisma studio`).
-- **Seeding**: Database seed script for populating initial development data.
+- **Connection Pooling**: Supports both pooled (`DATABASE_URL`) and direct (`DATABASE_URL_UNPOOLED`) connections for Vercel Postgres / Neon.
 
-## Database: SQLite
+## Database: PostgreSQL (Vercel Postgres / Neon)
 
-### Why SQLite
+### Why PostgreSQL
 
-- **Zero configuration**: File-based database requires no server process, installation, or connection management.
-- **Portable**: The entire database is a single file, easy to back up, copy, or reset during development.
-- **Sufficient for scope**: BizLab is a small-to-medium scale application serving a research lab; SQLite handles this workload efficiently.
-- **Low operational cost**: No database server to maintain, monitor, or secure separately.
+- **Production-ready**: Robust, battle-tested relational database suitable for production workloads.
+- **Vercel integration**: Managed PostgreSQL via Vercel Postgres (powered by Neon) with automatic provisioning, connection pooling, and serverless compatibility.
+- **Connection pooling**: Pooled connections via `DATABASE_URL` for serverless function compatibility; direct connections via `DATABASE_URL_UNPOOLED` for Prisma migrations.
+- **Scalable**: Handles concurrent reads and writes without the limitations of file-based databases.
 
-### Migration Path
-
-If the application grows beyond SQLite's capabilities (concurrent write-heavy workloads, multi-server deployment), Prisma makes it straightforward to migrate to PostgreSQL by changing the provider in `schema.prisma` and updating the connection string.
-
-## Styling: Tailwind CSS
+## Styling: Tailwind CSS 4
 
 ### Why Tailwind CSS
 
@@ -80,40 +80,57 @@ If the application grows beyond SQLite's capabilities (concurrent write-heavy wo
 ### Key Features Used
 
 - **Responsive design**: Mobile-first responsive utilities for all screen sizes.
-- **Dark mode**: Built-in dark mode support via class strategy.
 - **Custom theme**: Extended configuration for project-specific colors and typography.
 
-## Validation: Zod
+## Validation: Zod 3.25.76
 
 ### Why Zod
 
 - **TypeScript-first**: Schema definitions automatically infer TypeScript types, avoiding duplicate type declarations.
-- **Runtime validation**: Validates API request bodies and form inputs at runtime, complementing TypeScript's compile-time checks.
-- **Composable schemas**: Schemas can be composed and reused across API routes and form components.
-- **Error messages**: Structured error output suitable for both API responses and form field validation.
+- **Runtime validation**: Validates API request bodies at runtime, complementing TypeScript's compile-time checks.
+- **Composable schemas**: 4 schemas defined in `src/lib/validations.ts` used across API routes.
+- **Error messages**: Structured error output suitable for API responses.
 
-## Development Environment Requirements
+## Testing: Vitest 4.1.0
 
-### Prerequisites
+### Why Vitest
 
-- **Node.js**: Version 20.x LTS or later
-- **npm** (v10+) or **pnpm** (v9+): Package management
-- **Git**: Version control
+- **Fast execution**: Native ESM support with instant hot module replacement for rapid test feedback.
+- **Vitest-compatible with Jest API**: Familiar testing API with describe/it/expect patterns.
+- **TypeScript support**: First-class TypeScript support without additional configuration.
+- **Prisma mocking**: Integrated with Prisma mocks for database layer testing.
 
-### Initial Setup Commands
+### Test Coverage
 
-1. Create the Next.js project with TypeScript and Tailwind CSS
-2. Install Prisma and initialize with SQLite provider
-3. Install Zod for validation
-4. Configure the Prisma schema and run initial migration
-5. Start the development server
+- **5 test files** with **67 tests** (all passing)
+- Covers: Zod schema validation, utility functions, API routes (papers CRUD + auth verification)
+- Test infrastructure in `src/__tests__/` with setup, mocks, and helpers
 
-### Environment Variables
+## Linting: ESLint 9
 
-The application requires the following environment variables defined in `.env`:
+### Configuration
 
-- `DATABASE_URL`: SQLite connection string (e.g., `file:./dev.db`)
-- `ADMIN_PASSWORD`: The admin password required for edit and delete operations
+- ESLint 9 flat config format
+- Next.js recommended rules
+- TypeScript-aware linting
+
+## Environment Variables
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| DATABASE_URL | PostgreSQL connection string (pooled) | postgres://...?pgbouncer=true |
+| DATABASE_URL_UNPOOLED | PostgreSQL direct connection (for migrations) | postgres://... |
+| ADMIN_PASSWORD | Admin password for edit/delete operations | (secret) |
+
+## Deployment
+
+### Platform: Vercel
+
+- **Automatic GitHub deployment**: Pushes to the main branch trigger automatic builds and deployments.
+- **Production URL**: https://bizlab-chi.vercel.app
+- **Vercel Postgres**: Managed PostgreSQL integration powered by Neon with automatic connection pooling.
+- **Serverless functions**: API routes run as Vercel serverless functions with automatic scaling.
+- **Edge optimization**: Static pages served from Vercel's edge network for low latency.
 
 ### Development Scripts
 
@@ -123,12 +140,11 @@ The application requires the following environment variables defined in `.env`:
 | `build` | Build production bundle |
 | `start` | Start production server |
 | `lint` | Run ESLint checks |
-| `db:migrate` | Run Prisma migrations |
-| `db:seed` | Seed database with sample data |
-| `db:studio` | Open Prisma Studio for visual database management |
+| `test` | Run Vitest test suite |
 
-## Deployment Considerations
+### Prerequisites
 
-- **Vercel**: Recommended deployment platform for Next.js with zero configuration. SQLite works with Vercel if using a persistent filesystem or switching to a hosted database.
-- **Self-hosted**: Can run on any Node.js server. SQLite file must be on persistent storage.
-- **Database upgrade**: For production deployments with higher concurrency requirements, consider migrating to PostgreSQL or MySQL using Prisma's provider switching capability.
+- **Node.js**: Version 20.x LTS or later
+- **npm**: Package management
+- **Git**: Version control
+- **PostgreSQL**: Database (managed by Vercel Postgres in production)
